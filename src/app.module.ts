@@ -9,6 +9,7 @@ import { CategoryModule } from './modules/category/category.module';
 import { NewsModule } from './modules/news/news.module';
 import { UserModule } from './modules/users/user.module';
 import { CommentModule } from './modules/comments/comment.module';
+import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
   imports: [
@@ -28,7 +29,8 @@ import { CommentModule } from './modules/comments/comment.module';
     AuthModule,
     NewsModule,
     CategoryModule,
-    CommentModule
+    CommentModule,
+    UploadModule
   ],
   controllers: [AppController],
   providers: [AppService],

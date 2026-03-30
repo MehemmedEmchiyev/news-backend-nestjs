@@ -11,9 +11,6 @@ export class UploadController {
     constructor(private uploadService: UploadService) { }
 
     @Post()
-    @ApiBearerAuth()
-    @UseGuards(AuthGuards)
-    @Roles(RoleEnum.ADMIN)
     @ApiConsumes("multipart/form-data")
     @ApiBody({
         schema: {

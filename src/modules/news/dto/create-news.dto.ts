@@ -18,7 +18,6 @@ export class CreateNewsDto {
     @Type()
     @IsString()
     @ApiProperty({ default: 'slug-data' })
-    @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
     @IsOptional()
     slug?: string;
 

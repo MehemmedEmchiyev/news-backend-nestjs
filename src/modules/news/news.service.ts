@@ -20,11 +20,7 @@ export class NewsService {
         private categoryService: CategoryService
     ) { }
     list(query: NewsListDto) {
-        console.log(query);
-
-        let order: FindOptionsOrder<NewsEntity> = {
-            // createdAt: "DESC"
-        }
+        let order: FindOptionsOrder<NewsEntity> = { isPin: "DESC" }
         let where: FindOptionsWhere<NewsEntity> = {}
         if (query.popular) {
             order.views = "DESC"
@@ -33,21 +29,60 @@ export class NewsService {
             order.like = "DESC"
         }
 
+        const page = query.page ?? 1
+        const limit = query.limit ?? 10
+        const skip = (page - 1) * limit
 
-        return this.newsRepo.find({
+        return this.newsRepo.findAndCount({
             where,
             order,
             relations: ["category"],
-            select: ["id", "title", "createdAt", "thumbnail", "updatedAt", "slug", "like", "views", "dislike", "categoryId"]
-        })
+            select: ["id", "title", "createdAt", "thumbnail", "updatedAt", "slug", "like", "views", "dislike", "categoryId", "isPin"],
+            take: limit,
+            skip
+        }).then(([items, total]) => ({
+            items,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        }))
     }
 
-    async getNews(slug: string) {
+    async getNews(id: number) {
         let news = await this.newsRepo.findOne({
-            where: {
-                slug
-            },
-            relations: ["category" , "comments"]
+            where: { id: id },
+            relations: ["category", "comments", "comments.user"],
+            select: {
+                id: true,
+                title: true,
+                content: true,
+                slug: true,
+                thumbnail: true,
+                createdAt: true,
+                updatedAt: true,
+                like: true,
+                dislike: true,
+                views: true,
+                category: {
+                    id: true,
+                    title: true
+                },
+                comments: {
+                    id: true,
+                    content: true,
+                    newsId: true,
+                    userId: true,
+                    user: {
+                        id: true,
+                        username: true,
+                        fullName: true,
+                        photoUrl: true
+                    }
+                }
+            }
         })
         if (!news) throw new NotFoundException("News is not found ! ")
 
@@ -169,5 +204,17 @@ export class NewsService {
 
         return news
     }
+
+    async newsPin(id: number) {
+        const news = await this.newsRepo.findOne({ where: { id } })
+        if (!news) throw new NotFoundException('News is not found')
+        let message = !news.isPin ? `News pined` : 'Pin removed'
+
+        await this.newsRepo.update({ id }, { isPin: news.isPin ? false : true })
+        return {
+            message
+        }
+    }
+
 
 }

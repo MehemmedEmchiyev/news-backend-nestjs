@@ -43,4 +43,7 @@ export class NewsEntity extends BaseEntity {
     @ManyToOne(() => CategoryEntity, (category) => category.news)
     @JoinColumn({ name: "categoryId" })
     category: CategoryEntity
+
+    @Column({ default: false })
+    isPin: boolean
 }

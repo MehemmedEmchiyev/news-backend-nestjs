@@ -28,9 +28,9 @@ export class NewsController {
         return this.newsService.getNewsByCategoryId(id)
     }
 
-    @Get(':slug')
-    getNews(@Param("slug") slug: string) {
-        return this.newsService.getNews(slug)
+    @Get(':id')
+    getNews(@Param("id") id: number) {
+        return this.newsService.getNews(id)
     }
 
     @Post()
@@ -48,12 +48,21 @@ export class NewsController {
     @UseGuards(AuthGuards)
     @Roles(RoleEnum.ADMIN)
     @ApiBearerAuth()
-
     update(
         @Body() body: UpdateNewsDto,
         @Param("id") newsId: number
     ) {
         return this.newsService.update(newsId, body)
+    }
+
+    @Post('pin/:id')
+    @UseGuards(AuthGuards)
+    @Roles(RoleEnum.ADMIN)
+    @ApiBearerAuth()
+    pin(
+        @Param("id") id : number
+    ) {
+        return this.newsService.newsPin(id)
     }
 
     @Delete(":id")

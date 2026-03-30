@@ -1,5 +1,6 @@
 import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { NewsEntity } from "./News.entity";
+import { UserEntity } from "./User.entity";
 
 @Entity('comments')
 export class CommentEntitiy extends BaseEntity {
@@ -16,4 +17,10 @@ export class CommentEntitiy extends BaseEntity {
     @JoinColumn({ name: "newsId" })
     news: NewsEntity
 
+    @Column({ nullable: true })
+    userId: number
+
+    @ManyToOne(() => UserEntity)
+    @JoinColumn({ name: "userId" })
+    user: UserEntity
 }

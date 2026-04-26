@@ -6,6 +6,7 @@ import type { AuthorizedUser } from "./auth.types";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { ApiBearerAuth } from "@nestjs/swagger";
 import { AuthGuards } from "src/guards/auth.guard";
+import { GoogleLoginDto } from "./dto/google-login.dto";
 
 @Controller('auth')
 export class AuthController {
@@ -21,6 +22,11 @@ export class AuthController {
         @Body() params: CreateUserDto
     ) {
         return this.authService.register(params)
+    }
+
+    @Post('google')
+    googleLogin(@Body() body: GoogleLoginDto) {
+        return this.authService.googleLogin(body.idToken)
     }
 
     @Post('guest')

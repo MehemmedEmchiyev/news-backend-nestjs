@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, UnauthorizedException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { UserEntity } from "src/entities/User.entity";
 import { Repository } from "typeorm";
@@ -6,16 +6,40 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import bcrypt from "bcrypt"
 import { LoginDto } from "./dto/login-user.dto";
 import { JwtService } from "@nestjs/jwt";
-import { hash } from "crypto";
+import { hash, randomBytes } from "crypto";
 import { RoleEnum } from "../users/user.types";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
+import config from "src/config";
+import { App, cert, getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 @Injectable()
 export class AuthService {
+    private readonly firebaseApp: App;
+
     constructor(
         @InjectRepository(UserEntity)
         private authRepo: Repository<UserEntity>,
         private jwtService: JwtService
-    ) { }
+    ) {
+        this.firebaseApp = this.initializeFirebaseApp();
+    }
+
+    private initializeFirebaseApp() {
+        if (getApps().length) return getApps()[0];
+
+        const { projectId, clientEmail, privateKey } = config.firebase;
+        if (!projectId || !clientEmail || !privateKey) {
+            throw new InternalServerErrorException("Firebase credentials are missing in .env");
+        }
+
+        return initializeApp({
+            credential: cert({
+                projectId,
+                clientEmail,
+                privateKey,
+            }),
+        });
+    }
 
     async login(params: LoginDto) {
         let existUser = await this.authRepo.findOne({ where: { email: params.email } })
@@ -63,6 +87,38 @@ export class AuthService {
             }
         }
 
+    }
+
+    async googleLogin(idToken: string) {
+        const decoded = await getAuth(this.firebaseApp).verifyIdToken(idToken);
+        const email = decoded.email;
+
+        if (!email) throw new UnauthorizedException("Google account email is missing");
+
+        let existUser = await this.authRepo.findOne({ where: { email } });
+
+        if (!existUser) {
+            existUser = this.authRepo.create({
+                email,
+                username: `google_${decoded.uid}`,
+                fullName: decoded.name || undefined,
+                photoUrl: decoded.picture || undefined,
+                password: randomBytes(32).toString("hex"),
+                role: RoleEnum.USER,
+            });
+            await existUser.save();
+        }
+
+        const token = this.jwtService.sign({ userId: existUser.id });
+
+        return {
+            message: "Google login is succesfully",
+            token,
+            user: {
+                ...existUser,
+                password: undefined,
+            },
+        };
     }
 
     async guest(ip: string) {

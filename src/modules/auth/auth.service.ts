@@ -7,7 +7,7 @@ import bcrypt from "bcrypt"
 import { LoginDto } from "./dto/login-user.dto";
 import { JwtService } from "@nestjs/jwt";
 import { hash, randomBytes } from "crypto";
-import { RoleEnum } from "../users/user.types";
+import { AuthProviderEnum, RoleEnum } from "../users/user.types";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import config from "src/config";
 import { App, cert, getApps, initializeApp } from "firebase-admin/app";
@@ -74,7 +74,8 @@ export class AuthService {
         let password = await bcrypt.hash(params.password, 10)
         let userData = {
             ...params,
-            password
+            password,
+            provider: AuthProviderEnum.PASSWORD,
         }
         let user = this.authRepo.create(userData)
         await user.save()
@@ -105,7 +106,11 @@ export class AuthService {
                 photoUrl: decoded.picture || undefined,
                 password: randomBytes(32).toString("hex"),
                 role: RoleEnum.USER,
+                provider: AuthProviderEnum.GOOGLE,
             });
+            await existUser.save();
+        } else if (existUser.provider !== AuthProviderEnum.GOOGLE) {
+            existUser.provider = AuthProviderEnum.GOOGLE;
             await existUser.save();
         }
 
@@ -137,10 +142,14 @@ export class AuthService {
                     username: userName,
                     email,
                     password: random,
-                    role: RoleEnum.USER
+                    role: RoleEnum.USER,
+                    provider: AuthProviderEnum.GUEST,
                 }
             )
             await user.save()
+        } else if (user.provider !== AuthProviderEnum.GUEST) {
+            user.provider = AuthProviderEnum.GUEST;
+            await user.save();
         }
 
         let token = this.jwtService.sign({ userId: user.id })

@@ -1,4 +1,4 @@
-import { RoleEnum, UserGenderEnum } from "src/modules/users/user.types";
+import { AuthProviderEnum, RoleEnum, UserGenderEnum } from "src/modules/users/user.types";
 import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity("users")
@@ -20,6 +20,9 @@ export class UserEntity extends BaseEntity {
 
     @Column({ type: "enum", enum: RoleEnum, default: RoleEnum.USER })
     role: RoleEnum
+
+    @Column({ type: "enum", enum: AuthProviderEnum, default: AuthProviderEnum.PASSWORD })
+    provider: AuthProviderEnum
 
     @Column({ default: UserGenderEnum.MALE })
     gender: UserGenderEnum

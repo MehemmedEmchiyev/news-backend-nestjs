@@ -35,7 +35,7 @@ export class NewsEntity extends BaseEntity {
     views: number
 
     @Column({ nullable: true })
-    categoryId: number
+    categoryId: number | null
 
     @OneToMany(() => CommentEntitiy, (comments) => comments.news)
     comments: CommentEntitiy[]

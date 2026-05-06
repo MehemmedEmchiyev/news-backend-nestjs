@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, UseGuards } from "@nestjs/common";
 import { CategoryService } from "./category.service";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { AuthGuards } from "src/guards/auth.guard";
@@ -32,7 +32,7 @@ export class CategoryController {
     @ApiBearerAuth()
     update(
         @Body() body: UpdateCategoryDto,
-        @Param("id") id: number
+        @Param("id", ParseIntPipe) id: number
     ) {
         return this.categoryService.update(id, body)
     }
@@ -42,7 +42,7 @@ export class CategoryController {
     @UseGuards(AuthGuards)
     @Roles(RoleEnum.ADMIN)
     @ApiBearerAuth()
-    delete(@Param("id") id: number) {
+    delete(@Param("id", ParseIntPipe) id: number) {
         return this.categoryService.delete(id)
     }
 

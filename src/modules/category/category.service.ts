@@ -1,16 +1,21 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { CategoryEntity } from "src/entities/Category.entity";
-import { Repository } from "typeorm";
+import { CommentEntitiy } from "src/entities/Comment.entity";
+import { NewsEntity } from "src/entities/News.entity";
+import { In, Repository } from "typeorm";
 import { CreateCategoryDto } from "./dto/create-category.dto";
-import { watch } from "fs/promises";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
 
 @Injectable()
 export class CategoryService {
     constructor(
         @InjectRepository(CategoryEntity)
-        private categoryRepo: Repository<CategoryEntity>
+        private categoryRepo: Repository<CategoryEntity>,
+        @InjectRepository(NewsEntity)
+        private newsRepo: Repository<NewsEntity>,
+        @InjectRepository(CommentEntitiy)
+        private commentRepo: Repository<CommentEntitiy>
     ) { }
 
     findCategoryById(categoryId: number) {
@@ -58,6 +63,17 @@ export class CategoryService {
 
         if (!checkCategory) throw new NotFoundException("Category is not found ! ")
 
+        const newsList = await this.newsRepo.find({
+            where: { categoryId: id },
+            select: ["id"]
+        })
+        const newsIds = newsList.map((news) => news.id)
+
+        if (newsIds.length > 0) {
+            await this.commentRepo.delete({ newsId: In(newsIds) })
+        }
+
+        await this.newsRepo.delete({ categoryId: id })
         await this.categoryRepo.delete({ id })
 
         return {
@@ -66,7 +82,17 @@ export class CategoryService {
     }
 
     async deleteAll() {
-        await this.categoryRepo.deleteAll()
+        const allNews = await this.newsRepo.find({
+            select: ["id"]
+        })
+        const newsIds = allNews.map((news) => news.id)
+
+        if (newsIds.length > 0) {
+            await this.commentRepo.delete({ newsId: In(newsIds) })
+        }
+
+        await this.newsRepo.createQueryBuilder().delete().from(NewsEntity).execute()
+        await this.categoryRepo.createQueryBuilder().delete().from(CategoryEntity).execute()
         return {
             message: "All category is deleted"
         }
